@@ -97,6 +97,7 @@ class CRAGPipeline:
         citations = []
         for item in all_contexts:
             meta = item.get("metadata", {})
+            is_web = bool(meta.get("source", "").startswith("http"))
             citations.append({
                 "document_id": meta.get("document_id", ""),
                 "filename": meta.get("filename", "Unknown"),
@@ -104,6 +105,7 @@ class CRAGPipeline:
                 "chunk_id": item.get("id", ""),
                 "score": item.get("relevance_score"),
                 "excerpt": item["text"][:320],
+                "url": meta.get("source") if is_web else "",
             })
 
         step = {

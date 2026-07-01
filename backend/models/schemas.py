@@ -37,6 +37,7 @@ class Citation(BaseModel):
     chunk_id: str
     score: float | None = None
     excerpt: str
+    url: str = ""
 
 
 class ChatResponse(BaseModel):

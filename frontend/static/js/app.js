@@ -9,153 +9,192 @@ const chatForm = document.getElementById("chatForm");
 const questionInput = document.getElementById("questionInput");
 const sendButton = document.getElementById("sendButton");
 const messagesEl = document.getElementById("messages");
-const agentLog = document.getElementById("agentLog");
-const logEntries = document.getElementById("logEntries");
-const logCount = document.getElementById("logCount");
+const chatInner = document.getElementById("chatInner");
 const composerHint = document.getElementById("composerHint");
 
 let hasDocuments = false;
 
-/* ── Icon SVGs ──────────────────────────── */
-const ICONS = {
+/* ── SVG Icons ──────────────────────────── */
+const I = {
     file: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-    sparkle: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5z"/><path d="M5 15l.5 2L7 17.5l-1.5.5L5 20l-.5-2-2-.5 2-.5z" opacity="0.5"/><path d="M18 4l.3 1.2L19.5 5.5l-1.2.3L18 7l-.3-1.2-1.2-.3 1.2-.3z" opacity="0.3"/></svg>',
     globe: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
     doc: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-    check: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>',
-    spinner: '<svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+    check: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>',
+    spin: '<svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+    external: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>',
+    bot: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="4"/><circle cx="8" cy="15" r="1.5"/><circle cx="16" cy="15" r="1.5"/><path d="M12 8V3M8 4l4-1 4 1"/></svg>',
 };
 
 /* ── Helpers ────────────────────────────── */
-function escapeHtml(str) {
+function esc(str) {
     const d = document.createElement("div");
     d.textContent = str;
     return d.innerHTML;
 }
 
-function formatAnswer(text) {
-    return escapeHtml(text)
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\n/g, "<br>");
-}
-
-/* ── Messages ────────────────────────────── */
-function clearEmptyState() {
-    const es = messagesEl.querySelector(".empty-state");
-    if (es) es.remove();
-}
-
-function addUserMessage(text) {
-    clearEmptyState();
-    const wrap = document.createElement("div");
-    wrap.className = "msg-user-wrap";
-    wrap.innerHTML = `<div class="msg-user">${escapeHtml(text)}</div>`;
-    messagesEl.appendChild(wrap);
-    scrollDown();
-}
-
-function addAssistantMessage(answer, citations) {
-    clearEmptyState();
-    const wrap = document.createElement("div");
-    wrap.className = "msg-assistant-wrap";
-    wrap.innerHTML = `
-        <div class="msg-assistant">
-            <div class="msg-avatar">${ICONS.sparkle}</div>
-            <div class="msg-body">
-                <div class="answer-text">${formatAnswer(answer)}</div>
-                ${renderCitations(citations)}
-            </div>
-        </div>
-    `;
-    messagesEl.appendChild(wrap);
-    scrollDown();
-}
-
-function showLoader() {
-    clearEmptyState();
-    const wrap = document.createElement("div");
-    wrap.className = "msg-assistant-wrap";
-    wrap.id = "loaderMsg";
-    wrap.innerHTML = `
-        <div class="msg-assistant">
-            <div class="msg-avatar">${ICONS.sparkle}</div>
-            <div class="msg-body"><div class="loader"><span></span><span></span><span></span></div></div>
-        </div>
-    `;
-    messagesEl.appendChild(wrap);
-    scrollDown();
-}
-
-function removeLoader() {
-    const el = document.getElementById("loaderMsg");
-    if (el) el.remove();
-}
-
-function addErrorMessage(text) {
-    clearEmptyState();
-    const wrap = document.createElement("div");
-    wrap.className = "msg-assistant-wrap";
-    wrap.innerHTML = `
-        <div class="msg-assistant">
-            <div class="msg-avatar msg-avatar-err"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
-            <div class="msg-body"><div class="answer-text" style="color:var(--red)">${escapeHtml(text)}</div></div>
-        </div>
-    `;
-    messagesEl.appendChild(wrap);
-    scrollDown();
+function fmt(text) {
+    return esc(text).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
 }
 
 function scrollDown() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-/* ── Citations ────────────────────────────── */
-function renderCitations(citations) {
+function clearEmpty() {
+    const es = chatInner.querySelector(".empty-state");
+    if (es) es.remove();
+}
+
+/* ── User message ───────────────────────── */
+function addUserMsg(text) {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg-user-wrap";
+    el.innerHTML = `<div class="msg-user">${esc(text)}</div>`;
+    chatInner.appendChild(el);
+    scrollDown();
+}
+
+/* ── Assistant message ──────────────────── */
+function addAssistantMsg(answer, citations) {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg-assistant-wrap";
+    el.innerHTML = `
+        <div class="msg-assistant">
+            <div class="msg-avatar">${I.bot}</div>
+            <div class="msg-body">
+                <div class="answer-text">${fmt(answer)}</div>
+                ${renderSources(citations)}
+            </div>
+        </div>
+    `;
+    chatInner.appendChild(el);
+    scrollDown();
+}
+
+/* ── Loader ─────────────────────────────── */
+function showLoader() {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg-assistant-wrap";
+    el.id = "loaderMsg";
+    el.innerHTML = `
+        <div class="msg-assistant">
+            <div class="msg-avatar">${I.bot}</div>
+            <div class="msg-body"><div class="loader"><span></span><span></span><span></span></div></div>
+        </div>
+    `;
+    chatInner.appendChild(el);
+    scrollDown();
+}
+
+function hideLoader() {
+    const el = document.getElementById("loaderMsg");
+    if (el) el.remove();
+}
+
+/* ── Error ──────────────────────────────── */
+function addErrorMsg(text) {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg-assistant-wrap";
+    el.innerHTML = `
+        <div class="msg-assistant">
+            <div class="msg-avatar msg-avatar-err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+            <div class="msg-body"><div class="answer-text" style="color:var(--red)">${esc(text)}</div></div>
+        </div>
+    `;
+    chatInner.appendChild(el);
+    scrollDown();
+}
+
+/* ── Sources ────────────────────────────── */
+function renderSources(citations) {
     if (!citations || !citations.length) return "";
     const chips = citations.map((c) => {
         const isWeb = c.filename && c.filename.startsWith("web:");
         const label = isWeb
             ? c.filename.replace("web: ", "")
             : `${c.filename}${c.page ? " · p." + c.page : ""}`;
-        const icon = isWeb ? ICONS.globe : ICONS.doc;
-        return `<span class="source-chip ${isWeb ? "chip-web" : "chip-pdf"}">${icon}${escapeHtml(label)}</span>`;
+        const icon = isWeb ? I.globe : I.doc;
+        const cls = isWeb ? "chip-web" : "chip-pdf";
+
+        if (isWeb && c.url) {
+            return `<a href="${esc(c.url)}" target="_blank" rel="noopener" class="source-chip ${cls}">${icon}${esc(label)}${I.external}</a>`;
+        }
+        return `<span class="source-chip ${cls}">${icon}${esc(label)}</span>`;
     }).join("");
-    return `<div class="sources">${chips}</div>`;
-}
 
-/* ── Agent Log ────────────────────────────── */
-function showAgentLog() {
-    agentLog.style.display = "block";
-    logEntries.innerHTML = "";
-    logCount.textContent = "0";
-}
-
-function addLogEntry(step) {
-    const entry = document.createElement("div");
-    entry.className = "log-entry";
-    entry.id = `log-${step.agent}`;
-    entry.innerHTML = `
-        <span class="log-entry-icon">${ICONS.spinner}</span>
-        <span class="log-entry-agent">${escapeHtml(step.agent)}</span>
-        <span class="log-entry-detail">${escapeHtml(step.detail)}</span>
+    return `
+        <div class="sources-label">Sources</div>
+        <div class="sources">${chips}</div>
     `;
-    logEntries.appendChild(entry);
-    logCount.textContent = parseInt(logCount.textContent) + 1;
 }
 
-function markLogEntryDone(agent) {
-    const entry = document.getElementById(`log-${agent}`);
-    if (entry) {
-        const icon = entry.querySelector(".log-entry-icon");
-        if (icon) icon.innerHTML = ICONS.check;
+/* ── Agent progress card ────────────────── */
+let progressCard = null;
+let progressBody = null;
+let progressSteps = {};
+
+function createProgressCard() {
+    clearEmpty();
+    hideLoader();
+    if (progressCard) progressCard.remove();
+
+    progressCard = document.createElement("div");
+    progressCard.className = "agent-progress";
+    progressCard.id = "agentProgress";
+    progressCard.innerHTML = `
+        <div class="agent-progress-head">
+            <span class="pulse-dot"></span>
+            <span>CRAG Pipeline Running</span>
+        </div>
+        <div class="agent-progress-body"></div>
+    `;
+    chatInner.appendChild(progressCard);
+    progressBody = progressCard.querySelector(".agent-progress-body");
+    progressSteps = {};
+    scrollDown();
+}
+
+function addProgressStep(agent, detail) {
+    if (!progressCard) createProgressCard();
+    if (progressSteps[agent]) return;
+
+    progressSteps[agent] = true;
+    const step = document.createElement("div");
+    step.className = "agent-step";
+    step.id = `agent-step-${agent}`;
+    step.innerHTML = `
+        <span class="agent-step-icon">${I.spin}</span>
+        <span class="agent-step-label">${esc(agent)}</span>
+        <span class="agent-step-detail">${esc(detail)}</span>
+    `;
+    progressBody.appendChild(step);
+    scrollDown();
+}
+
+function markProgressDone(agent) {
+    const step = document.getElementById(`agent-step-${agent}`);
+    if (step) {
+        step.querySelector(".agent-step-icon").innerHTML = `<span class="done">${I.check}</span>`;
     }
 }
 
-/* ── Sidebar toggle ────────────────────────── */
+function removeProgressCard() {
+    if (progressCard) {
+        progressCard.remove();
+        progressCard = null;
+        progressBody = null;
+    }
+}
+
+/* ── Sidebar ────────────────────────────── */
 menuBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
 
-/* ── Documents ────────────────────────────── */
-async function loadDocuments() {
+/* ── Documents ──────────────────────────── */
+async function loadDocs() {
     try {
         const res = await fetch("/api/documents");
         const docs = await res.json();
@@ -175,9 +214,9 @@ async function loadDocuments() {
         docs.forEach((doc) => {
             const li = document.createElement("li");
             li.innerHTML = `
-                <div class="doc-icon">${ICONS.file}</div>
+                <div class="doc-icon">${I.file}</div>
                 <div class="doc-info">
-                    <strong>${escapeHtml(doc.filename)}</strong>
+                    <strong>${esc(doc.filename)}</strong>
                     <span>${doc.pages} pages · ${doc.chunks} chunks</span>
                 </div>
             `;
@@ -188,7 +227,7 @@ async function loadDocuments() {
     }
 }
 
-/* ── Upload ────────────────────────────── */
+/* ── Upload ─────────────────────────────── */
 async function uploadPdf(file) {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
         uploadStatus.textContent = "Only PDF files are supported.";
@@ -205,7 +244,7 @@ async function uploadPdf(file) {
         if (!res.ok) throw new Error(data.detail || "Upload failed");
         uploadStatus.textContent = `Indexed ${data.document.chunks} chunks · ${data.document.pages} pages`;
         uploadStatus.className = "upload-status success";
-        await loadDocuments();
+        await loadDocs();
     } catch (e) {
         uploadStatus.textContent = e.message;
         uploadStatus.className = "upload-status error";
@@ -228,19 +267,18 @@ dropZone.addEventListener("drop", (e) => {
     if (f) uploadPdf(f);
 });
 
-/* ── Chat with real-time streaming ────────── */
+/* ── Chat — real-time streaming ──────────── */
 chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const question = questionInput.value.trim();
     if (!question || !hasDocuments) return;
 
-    addUserMessage(question);
+    addUserMsg(question);
     questionInput.value = "";
     questionInput.style.height = "auto";
     sendButton.disabled = true;
     questionInput.disabled = true;
     showLoader();
-    showAgentLog();
 
     try {
         const res = await fetch("/api/chat/stream", {
@@ -255,44 +293,44 @@ chatForm.addEventListener("submit", async (e) => {
         }
 
         const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const dec = new TextDecoder();
+        let buf = "";
         let answer = "";
         let citations = [];
-        const seenAgents = new Set();
+        const seen = new Set();
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-
-            const lines = buffer.split("\n");
-            buffer = lines.pop();
+            buf += dec.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop();
 
             for (const line of lines) {
                 if (!line.startsWith("data: ")) continue;
-                const jsonStr = line.slice(6);
                 try {
-                    const event = JSON.parse(jsonStr);
-                    if (event.type === "step") {
-                        if (!seenAgents.has(event.agent)) {
-                            seenAgents.add(event.agent);
-                            addLogEntry(event);
+                    const ev = JSON.parse(line.slice(6));
+                    if (ev.type === "step") {
+                        if (!seen.has(ev.agent)) {
+                            seen.add(ev.agent);
+                            addProgressStep(ev.agent, ev.detail);
                         }
-                    } else if (event.type === "done") {
-                        answer = event.answer || answer;
-                        citations = event.citations || citations;
+                    } else if (ev.type === "done") {
+                        answer = ev.answer || answer;
+                        citations = ev.citations || citations;
                     }
                 } catch {}
             }
         }
 
-        removeLoader();
-        seenAgents.forEach((a) => markLogEntryDone(a));
-        addAssistantMessage(answer, citations);
+        hideLoader();
+        seen.forEach((a) => markProgressDone(a));
+        setTimeout(removeProgressCard, 600);
+        addAssistantMsg(answer, citations);
     } catch (err) {
-        removeLoader();
-        addErrorMessage(err.message);
+        hideLoader();
+        removeProgressCard();
+        addErrorMsg(err.message);
     } finally {
         sendButton.disabled = false;
         questionInput.disabled = false;
@@ -300,12 +338,11 @@ chatForm.addEventListener("submit", async (e) => {
     }
 });
 
-/* ── Auto-resize textarea ────────────── */
+/* ── Textarea auto-resize ────────────────── */
 questionInput.addEventListener("input", () => {
     questionInput.style.height = "auto";
     questionInput.style.height = Math.min(questionInput.scrollHeight, 180) + "px";
 });
-
 questionInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -313,7 +350,7 @@ questionInput.addEventListener("keydown", (e) => {
     }
 });
 
-/* ── Init ────────────────────────────── */
-refreshDocs.addEventListener("click", loadDocuments);
-loadDocuments();
+/* ── Init ────────────────────────────────── */
+refreshDocs.addEventListener("click", loadDocs);
+loadDocs();
 questionInput.focus();
