@@ -45,7 +45,7 @@ class CRAGPipeline:
             "status": "done",
             "detail": f"Retrieved {len(chunks)} chunks from vector store",
         }
-        return {"chunks": chunks, "steps": [step]}
+        return {"chunks": chunks, "steps": state["steps"] + [step]}
 
     def _grade(self, state: CRAGState) -> dict:
         question = state.get("rewritten_question") or state["question"]
@@ -58,7 +58,7 @@ class CRAGPipeline:
             "status": "done",
             "detail": f"{len(passed)}/{len(chunks)} chunks passed relevance threshold",
         }
-        return {"passed_chunks": passed, "failed_chunks": failed, "steps": [step]}
+        return {"passed_chunks": passed, "failed_chunks": failed, "steps": state["steps"] + [step]}
 
     def _rewrite(self, state: CRAGState) -> dict:
         question = state["question"]
@@ -72,7 +72,7 @@ class CRAGPipeline:
         return {
             "rewritten_question": rewritten,
             "retry_count": state.get("retry_count", 0) + 1,
-            "steps": [step],
+            "steps": state["steps"] + [step],
         }
 
     def _web_search(self, state: CRAGState) -> dict:
@@ -84,7 +84,7 @@ class CRAGPipeline:
             "status": "done",
             "detail": f"Found {len(results)} web results",
         }
-        return {"web_chunks": results, "steps": [step]}
+        return {"web_chunks": results, "steps": state["steps"] + [step]}
 
     def _generate(self, state: CRAGState) -> dict:
         all_contexts = state["passed_chunks"] + state["web_chunks"]
@@ -113,7 +113,7 @@ class CRAGPipeline:
             "status": "done",
             "detail": f"Generated answer from {len(all_contexts)} context items",
         }
-        return {"answer": answer, "citations": citations, "steps": [step]}
+        return {"answer": answer, "citations": citations, "steps": state["steps"] + [step]}
 
     def _decide_after_grade(self, state: CRAGState) -> Literal["generate", "rewrite", "web_search"]:
         if len(state["passed_chunks"]) >= 2:

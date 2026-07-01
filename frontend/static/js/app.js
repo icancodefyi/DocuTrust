@@ -273,7 +273,7 @@ dropZone.addEventListener("drop", (e) => {
     if (f) uploadPdf(f);
 });
 
-/* ── Chat — real-time streaming ──────────── */
+/* ── Chat ────────────────────────────────── */
 chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const question = questionInput.value.trim();
@@ -285,9 +285,10 @@ chatForm.addEventListener("submit", async (e) => {
     sendButton.disabled = true;
     questionInput.disabled = true;
     showLoader();
+    createProgressCard();
 
     try {
-        const res = await fetch("/api/chat/stream", {
+        const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question, top_k: 5 }),
@@ -298,41 +299,18 @@ chatForm.addEventListener("submit", async (e) => {
             throw new Error(err.detail || "Chat failed");
         }
 
-        const reader = res.body.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        let answer = "";
-        let citations = [];
-        const seen = new Set();
+        const data = await res.json();
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += dec.decode(value, { stream: true });
-            const lines = buf.split("\n");
-            buf = lines.pop();
-
-            for (const line of lines) {
-                if (!line.startsWith("data: ")) continue;
-                try {
-                    const ev = JSON.parse(line.slice(6));
-                    if (ev.type === "step") {
-                        if (!seen.has(ev.agent)) {
-                            seen.add(ev.agent);
-                            addProgressStep(ev.agent, ev.detail);
-                        }
-                    } else if (ev.type === "done") {
-                        answer = ev.answer || answer;
-                        citations = ev.citations || citations;
-                    }
-                } catch {}
-            }
+        if (data.debug && data.debug.steps) {
+            data.debug.steps.forEach((s) => {
+                addProgressStep(s.agent, s.detail);
+                markProgressDone(s.agent);
+            });
         }
 
         hideLoader();
-        seen.forEach((a) => markProgressDone(a));
         finalizeProgressCard();
-        addAssistantMsg(answer, citations);
+        addAssistantMsg(data.answer, data.citations);
     } catch (err) {
         hideLoader();
         finalizeProgressCard();
