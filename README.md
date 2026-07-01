@@ -1,92 +1,103 @@
-# DocuTrust: Enterprise Advanced RAG Platform
+# DocuTrust — Enterprise Advanced RAG Platform
 
-DocuTrust is a full-stack FastAPI RAG application for uploading PDF documents, extracting page text with PyMuPDF, chunking content, embedding it with `sentence-transformers/all-MiniLM-L6-v2`, storing vectors in ChromaDB, and answering questions with page citations.
+A **self-correcting RAG** platform: upload PDFs, ask questions, get answers with page-level citations. Built with FastAPI, LangGraph, Groq, ChromaDB, and Sentence Transformers. Runs locally with a single command — no Docker, no cloud infra.
 
-If Ollama is installed locally with a `llama3.1` model, DocuTrust uses it for answer generation. Otherwise, it returns a retrieval-grounded placeholder answer with citations so the app remains usable offline.
-
-## Features
-
-- FastAPI backend with modular routers, services, models, and utils.
-- PDF upload API with validation and saved files.
-- Chat API with top-k vector retrieval.
-- ChromaDB persistent vector storage.
-- Metadata storage in MongoDB when available, with SQLite fallback.
-- Modern responsive dark frontend using HTML, CSS, and vanilla JavaScript.
-- CORS enabled for local development.
-
-## Project Structure
-
-```text
-DocuTrust/
-  backend/
-    main.py
-    config.py
-    routers/
-    services/
-    models/
-    utils/
-  frontend/
-    templates/
-    static/
-  uploads/
-  chroma_db/
-  data/
-  requirements.txt
-  README.md
-```
-
-## Setup
+## Quick Start
 
 ```bash
-cd DocuTrust
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+bash start.sh
+# Opens at http://127.0.0.1:8000
 ```
 
-Optional MongoDB configuration:
+Prerequisites: Python 3.11+, `GROQ_API_KEY` and `TAVILY_API_KEY` in `.env`.
 
-```bash
-copy .env.example .env
+## How It Works
+
+```
+Question → Retrieve (ChromaDB) → Grade (cross-encoder) → Generate (Groq)
+                                   │
+                              < 2 chunks relevant?
+                                   │
+                      Rewrite query → Retrieve again → Web Search (Tavily)
+                                                            │
+                              └──────── All context ──────────┘
+                                                            │
+                                                      Generate (Groq)
+                                                            │
+                                                   Answer + Citations
 ```
 
-Set `MONGO_URI` in `.env`. If MongoDB cannot be reached, DocuTrust automatically uses `data/metadata.db`.
+The CRAG (Corrective RAG) pipeline automatically detects low-relevance retrievals, rewrites the query, and falls back to web search when needed.
 
-## Run
+## Architecture
+
+| Component | Technology | Role |
+|---|---|---|
+| Web server | FastAPI + Uvicorn | REST API + static file serving |
+| Vector DB | ChromaDB (persistent, on-disk) | Stores chunk embeddings for semantic search |
+| Metadata | SQLite (`metadata.db`, `traces.db`) | Document info + interaction trace logs |
+| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` | Text → 768-dim vectors |
+| LLM | Groq (`llama-3.3-70b-versatile`) | Answer generation + query rewriting |
+| Relevance grader | `BAAI/bge-reranker-v2-m3` CrossEncoder | Reranks chunks, filters ≥ 0.5 |
+| Web fallback | Tavily API | Web search when document context is insufficient |
+| Pipeline | LangGraph | State machine orchestrating retriever → grader → rewriter → web_search → generator |
+| Frontend | Vanilla HTML/CSS/JS | White ChatGPT-style UI with progress card + source chips |
+
+All storage is local files — delete the project folder to wipe everything.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | SPA frontend |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/upload` | Upload and index a PDF |
+| `GET` | `/api/documents` | List indexed documents |
+| `POST` | `/api/chat` | Ask a question |
+
+## Setup Manually
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+cp .env.example .env   # Fill in GROQ_API_KEY, TAVILY_API_KEY
 uvicorn backend.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000`.
+## Project Structure
 
-## API
+```
+backend/
+  main.py              — FastAPI app entry point
+  config.py            — Settings via pydantic-settings
+  routers/             — Health, upload, chat endpoints
+  services/            — Embedding, vector store, PDF, LLM, RAG orchestrator
+  agents/              — LangGraph CRAG pipeline nodes
+  models/              — Pydantic schemas
+  utils/               — Text splitter, file validation
+frontend/
+  templates/           — index.html (SPA)
+  static/css/          — styles.css
+  static/js/           — app.js
+chroma_db/             — Vector persistence (auto-created)
+data/                  — SQLite databases (auto-created)
+uploads/               — Uploaded PDF files
+```
 
-- `GET /health` checks service health.
-- `POST /api/upload` accepts a multipart PDF file and indexes it.
-- `GET /api/documents` lists indexed documents.
-- `POST /api/chat` answers questions using retrieved document chunks.
+## Key Decisions
 
-## File Guide
+- **Groq over Ollama** — zero local compute, free tier. Model: `llama-3.3-70b-versatile`
+- **Groq SDK over OpenAI SDK** — Python 3.14 incompatibility with `openai` v1.55.0
+- **SQLite over MongoDB** — zero infra. Mongo code still present as optional path if `MONGO_URI` is set
+- **No Docker, no React** — single `.venv`, one HTML page, no build step
 
-- `backend/main.py`: Creates the FastAPI app, mounts static assets, enables CORS, and registers routers.
-- `backend/config.py`: Central settings for paths, model names, Chroma collection, chunking, upload limits, and MongoDB.
-- `backend/models/schemas.py`: Pydantic request and response models.
-- `backend/routers/health.py`: Health-check endpoint.
-- `backend/routers/upload.py`: PDF upload and document listing endpoints.
-- `backend/routers/chat.py`: Question-answering endpoint.
-- `backend/services/pdf_service.py`: Extracts text from PDF pages with PyMuPDF.
-- `backend/services/embedding_service.py`: Loads Sentence Transformers and creates normalized embeddings.
-- `backend/services/vector_store.py`: Persists and queries document vectors in ChromaDB.
-- `backend/services/metadata_store.py`: Stores document metadata in MongoDB or SQLite fallback.
-- `backend/services/llm_service.py`: Uses local Ollama when available or returns a grounded placeholder.
-- `backend/services/rag_service.py`: Coordinates upload ingestion, chunking, embedding, retrieval, and citations.
-- `backend/utils/file_utils.py`: Sanitizes filenames and validates PDF uploads.
-- `backend/utils/text_splitter.py`: Splits page text into overlapping chunks.
-- `frontend/templates/index.html`: Single-page upload and chat UI.
-- `frontend/static/css/styles.css`: Responsive dark theme and loading animations.
-- `frontend/static/js/app.js`: Upload, chat, document refresh, drag-and-drop, and citation rendering.
-- `uploads/`: Saved PDF files.
-- `chroma_db/`: Persistent ChromaDB vector database.
-- `data/`: SQLite fallback metadata database.
-- `requirements.txt`: Python dependencies.
+## Environment Variables
+
+```
+GROQ_API_KEY=gsk_...    # Required
+GROQ_MODEL=llama-3.3-70b-versatile
+TAVILY_API_KEY=tvly-... # Required for web search fallback
+HF_TOKEN=hf_...         # Optional, for gated HuggingFace models
+MONGO_URI=              # Optional — falls back to SQLite
+```
+
+For full details, see [ARCHITECTURE.md](ARCHITECTURE.md).
