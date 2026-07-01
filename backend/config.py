@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     mongo_database: str = Field(default="docutrust", alias="MONGO_DATABASE")
 
     groq_api_key: str | None = Field(default=None, alias="GROQ_API_KEY")
-    groq_model: str = Field(default="llama3-70b-8192", alias="GROQ_MODEL")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
 
     tavily_api_key: str | None = Field(default=None, alias="TAVILY_API_KEY")
 
