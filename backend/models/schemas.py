@@ -27,6 +27,7 @@ class UploadResponse(BaseModel):
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=2000)
     top_k: int = Field(default=5, ge=1, le=10)
+    client_id: str | None = None
 
 
 class Citation(BaseModel):
@@ -41,4 +42,5 @@ class Citation(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     citations: list[Citation]
+    client_id: str
     debug: dict[str, Any] = Field(default_factory=dict)

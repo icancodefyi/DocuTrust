@@ -9,4 +9,8 @@ router = APIRouter(prefix="/api", tags=["chat"])
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest, rag_service: RAGService = Depends(get_rag_service)) -> ChatResponse:
-    return rag_service.chat(question=request.question, top_k=request.top_k)
+    return rag_service.chat(
+        question=request.question,
+        top_k=request.top_k,
+        client_id=request.client_id,
+    )

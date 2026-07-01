@@ -27,6 +27,29 @@ class MetadataStore:
 
         if not self.using_mongo:
             self._init_sqlite(self.settings.sqlite_path)
+            self._init_traces_sqlite()
+
+    def _init_traces_sqlite(self) -> None:
+        db_path = self.settings.sqlite_path.parent / "traces.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS traces (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id TEXT NOT NULL,
+                    question TEXT NOT NULL,
+                    rewritten_question TEXT,
+                    answer TEXT NOT NULL,
+                    chunks_retrieved INTEGER DEFAULT 0,
+                    chunks_passed INTEGER DEFAULT 0,
+                    web_fallback INTEGER DEFAULT 0,
+                    model_used TEXT DEFAULT 'groq',
+                    timestamp TEXT NOT NULL
+                )
+                """
+            )
+            connection.commit()
 
     def _init_sqlite(self, db_path: Path) -> None:
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -68,6 +91,35 @@ class MetadataStore:
                     metadata["pages"],
                     metadata["chunks"],
                     metadata["uploaded_at"],
+                ),
+            )
+            connection.commit()
+
+    def save_trace(self, trace: dict[str, Any]) -> None:
+        trace["timestamp"] = utc_now_iso()
+        if self.using_mongo and self.mongo_collection is not None:
+            self.mongo_collection.database["traces"].insert_one(trace)
+            return
+
+        db_path = self.settings.sqlite_path.parent / "traces.db"
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO traces
+                (client_id, question, rewritten_question, answer,
+                 chunks_retrieved, chunks_passed, web_fallback, model_used, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    trace["client_id"],
+                    trace["question"],
+                    trace.get("rewritten_question", ""),
+                    trace["answer"],
+                    trace.get("chunks_retrieved", 0),
+                    trace.get("chunks_passed", 0),
+                    1 if trace.get("web_fallback") else 0,
+                    trace.get("model_used", "groq"),
+                    trace["timestamp"],
                 ),
             )
             connection.commit()

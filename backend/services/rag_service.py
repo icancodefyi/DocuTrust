@@ -68,15 +68,34 @@ class RAGService:
                 buffer.write(chunk)
         await file.close()
 
-    def chat(self, question: str, top_k: int) -> ChatResponse:
+    def chat(self, question: str, top_k: int, client_id: str | None = None) -> ChatResponse:
+        import uuid
+
+        if not client_id:
+            client_id = uuid.uuid4().hex[:12]
+
         result = self.crag.run(question)
 
         citations = [
             Citation(**c) for c in result["citations"]
         ]
+
+        trace = {
+            "client_id": client_id,
+            "question": question,
+            "rewritten_question": "",
+            "answer": result["answer"],
+            "chunks_retrieved": len(result["citations"]),
+            "chunks_passed": len(result["citations"]),
+            "web_fallback": False,
+            "model_used": "groq-crag",
+        }
+        self.metadata_store.save_trace(trace)
+
         return ChatResponse(
             answer=result["answer"],
             citations=citations,
+            client_id=client_id,
             debug={
                 "retrieved_chunks": len(result["citations"]),
                 "llm": "groq-crag",
