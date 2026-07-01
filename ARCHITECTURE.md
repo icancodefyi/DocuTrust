@@ -31,7 +31,7 @@ graph TB
     end
 
     UI -->|POST /api/chat| API
-    API -->|rag_service.chat\(\)| LG
+    API -->|"rag_service.chat()"| LG
     LG -->|Embeddings| CDB
     LG -->|Groq API| LLM
     LG -->|Relevance scores| CE
@@ -47,11 +47,11 @@ graph TB
 ```mermaid
 flowchart TD
     Q[User Question] --> RET[1. RETRIEVE<br/>embed → ChromaDB search<br/>top-5 chunks]
-    RET --> GR[2. GRADE<br/>Cross-encoder bge-reranker-v2-m3<br/>Score ≥ 0.5]
+    RET --> GR[2. GRADE<br/>Cross-encoder bge-reranker-v2-m3<br/>Score >= 0.5]
 
-    GR -->|≥ 2 chunks passed| GEN1[GENERATE<br/>Groq answer<br/>with context]
+    GR -->|"2+ chunks passed"| GEN1[GENERATE<br/>Groq answer<br/>with context]
 
-    GR -->|< 2 chunks passed| RW[3. REWRITE<br/>Groq rewrites query<br/>for better retrieval]
+    GR -->|"< 2 chunks passed"| RW[3. REWRITE<br/>Groq rewrites query<br/>for better retrieval]
     RW --> RET2[4. RETRIEVE again<br/>With rewritten query]
     RET2 --> WS[5. WEB SEARCH<br/>Tavily fallback<br/>web results]
 

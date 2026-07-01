@@ -17,8 +17,8 @@ Prerequisites: Python 3.11+, `GROQ_API_KEY` and `TAVILY_API_KEY` in `.env`.
 flowchart TD
     Q[User Question] --> R[Retrieve<br/>ChromaDB search]
     R --> G[Grade<br/>Cross-encoder rerank]
-    G -->|≥ 2 relevant| Gen[Generate<br/>Groq answer]
-    G -->|< 2 relevant| RW[Rewrite query<br/>Groq]
+    G -->|"2+ relevant"| Gen[Generate<br/>Groq answer]
+    G -->|"< 2 relevant"| RW[Rewrite query<br/>Groq]
     RW --> R2[Retrieve again<br/>ChromaDB]
     R2 --> WS[Web Search<br/>Tavily fallback]
     WS --> Gen
