@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     groq_api_key: str | None = Field(default=None, alias="GROQ_API_KEY")
     groq_model: str = Field(default="llama3-70b-8192", alias="GROQ_MODEL")
 
+    tavily_api_key: str | None = Field(default=None, alias="TAVILY_API_KEY")
+
+    cross_encoder_model: str = "BAAI/bge-reranker-v2-m3"
+    relevance_threshold: float = 0.5
+    max_retries: int = 1
+
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     chroma_collection: str = "docutrust_documents"
     chunk_size: int = 900
