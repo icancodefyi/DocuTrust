@@ -1,244 +1,201 @@
-const uploadInput = document.getElementById("pdfInput");
-const dropZone = document.getElementById("dropZone");
-const uploadStatus = document.getElementById("uploadStatus");
-const documentList = document.getElementById("documentList");
-const refreshDocs = document.getElementById("refreshDocs");
-const chatForm = document.getElementById("chatForm");
-const questionInput = document.getElementById("questionInput");
-const sendButton = document.getElementById("sendButton");
-const messages = document.getElementById("messages");
-const agentLog = document.getElementById("agentLog");
-const logEntries = document.getElementById("logEntries");
-const logCount = document.getElementById("logCount");
+const uploadForm = document.querySelector("#uploadForm");
+const pdfInput = document.querySelector("#pdfInput");
+const uploadButton = document.querySelector("#uploadButton");
+const uploadStatus = document.querySelector("#uploadStatus");
+const dropZone = document.querySelector("#dropZone");
+const chatForm = document.querySelector("#chatForm");
+const questionInput = document.querySelector("#questionInput");
+const sendButton = document.querySelector("#sendButton");
+const messages = document.querySelector("#messages");
+const loadingTemplate = document.querySelector("#loadingTemplate");
+const documentList = document.querySelector("#documentList");
+const refreshDocs = document.querySelector("#refreshDocs");
+const logEntries = document.querySelector("#logEntries");
+const logCount = document.querySelector("#logCount");
 
-let hasDocuments = false;
-
-/* ── Helpers ─────────────────────────────── */
-function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function formatAnswer(text) {
-    return escapeHtml(text)
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\n/g, "<br>");
-}
-
-function setUploadStatus(text, type = "") {
+function setStatus(text, isError = false) {
     uploadStatus.textContent = text;
-    uploadStatus.className = "upload-status " + type;
+    uploadStatus.classList.toggle("error", isError);
 }
 
-/* ── Messages ────────────────────────────── */
 function addMessage(role, html) {
-    const emptyState = messages.querySelector(".empty-state");
-    if (emptyState) emptyState.remove();
-
-    const msg = document.createElement("div");
-    msg.className = "message";
-
-    const avatar = role === "user" ? "U" : "D";
-    msg.innerHTML = `
-        <div class="msg-avatar ${role}">${avatar}</div>
-        <div class="msg-content">${html}</div>
-    `;
-    messages.appendChild(msg);
+    const message = document.createElement("article");
+    message.className = `message ${role}`;
+    message.innerHTML = html;
+    messages.appendChild(message);
     messages.scrollTop = messages.scrollHeight;
-    return msg;
+    return message;
 }
 
-function showLoader() {
-    const msg = document.createElement("div");
-    msg.className = "message";
-    msg.id = "loadingMsg";
-    msg.innerHTML = `
-        <div class="msg-avatar assistant">D</div>
-        <div class="msg-content">
-            <div class="loader"><span></span><span></span><span></span></div>
-        </div>
-    `;
-    messages.appendChild(msg);
-    messages.scrollTop = messages.scrollHeight;
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+    }[char]));
 }
 
-function removeLoader() {
-    const loader = document.getElementById("loadingMsg");
-    if (loader) loader.remove();
-}
-
-/* ── Citations ────────────────────────────── */
 function renderCitations(citations) {
-    if (!citations || !citations.length) return "";
+    if (!citations.length) {
+        return "";
+    }
 
-    const items = citations.map((c, i) => `
+    const items = citations.map((citation) => `
         <div class="citation">
-            <span class="citation-num">${i + 1}</span>
-            <div>
-                <strong>${escapeHtml(c.filename)}</strong>
-                ${c.page ? ` · p.${c.page}` : ""}
-                ${c.score ? `<span class="score">(${(c.score * 100).toFixed(0)}% match)</span>` : ""}
-                <br>${escapeHtml(c.excerpt)}
-            </div>
+            <strong>${escapeHtml(citation.filename)} - page ${citation.page}</strong>
+            <p>${escapeHtml(citation.excerpt)}</p>
         </div>
     `).join("");
 
     return `<div class="citations">${items}</div>`;
 }
 
-/* ── Agent Log ────────────────────────────── */
 function renderSteps(steps) {
-    if (!steps || !steps.length) return;
+    if (!steps || !steps.length) {
+        return;
+    }
 
-    agentLog.style.display = "block";
     logEntries.innerHTML = "";
-
     steps.forEach((step) => {
         const entry = document.createElement("div");
         entry.className = "log-entry";
         entry.innerHTML = `
-            <span class="log-entry-icon">\u2713</span>
-            <span class="log-entry-agent">${escapeHtml(step.agent)}</span>
-            <span class="log-entry-detail">${escapeHtml(step.detail)}</span>
+            <span class="log-icon">\u2713</span>
+            <span class="log-agent">${escapeHtml(step.agent)}</span>
+            <span class="log-detail">${escapeHtml(step.detail)}</span>
         `;
         logEntries.appendChild(entry);
     });
-
     logCount.textContent = steps.length;
 }
 
-/* ── Documents ────────────────────────────── */
 async function loadDocuments() {
-    try {
-        const res = await fetch("/api/documents");
-        const docs = await res.json();
+    const response = await fetch("/api/documents");
+    const documents = await response.json();
+    documentList.innerHTML = "";
 
-        documentList.innerHTML = "";
-
-        if (!docs.length) {
-            documentList.innerHTML = '<li class="empty-docs">No documents uploaded yet.</li>';
-            hasDocuments = false;
-            questionInput.disabled = true;
-            sendButton.disabled = true;
-            questionInput.placeholder = "Upload a PDF to start asking questions...";
-            return;
-        }
-
-        hasDocuments = true;
-        questionInput.disabled = false;
-        sendButton.disabled = false;
-        questionInput.placeholder = "Ask about your uploaded documents...";
-
-        docs.forEach((doc) => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-                <div class="doc-icon">PDF</div>
-                <div class="doc-info">
-                    <strong>${escapeHtml(doc.filename)}</strong>
-                    <span>${doc.pages} pages · ${doc.chunks} chunks</span>
-                </div>
-            `;
-            documentList.appendChild(li);
-        });
-    } catch {
-        documentList.innerHTML = '<li class="empty-docs">Could not load documents.</li>';
-    }
-}
-
-/* ── Upload ────────────────────────────── */
-async function uploadPdf(file) {
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-        setUploadStatus("Only PDF files are supported.", "error");
+    if (!documents.length) {
+        documentList.innerHTML = "<li>No indexed PDFs yet.</li>";
         return;
     }
 
-    setUploadStatus("Uploading and indexing...");
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.detail || "Upload failed.");
-
-        setUploadStatus(`Indexed ${data.document.chunks} chunks from ${data.document.pages} pages.`, "success");
-        await loadDocuments();
-    } catch (err) {
-        setUploadStatus(err.message, "error");
+    for (const doc of documents) {
+        const item = window.document.createElement("li");
+        item.innerHTML = `
+            <strong>${escapeHtml(doc.filename)}</strong>
+            <span>${doc.pages} pages - ${doc.chunks} chunks</span>
+        `;
+        documentList.appendChild(item);
     }
 }
 
-uploadInput.addEventListener("change", () => {
-    const file = uploadInput.files[0];
-    if (file) uploadPdf(file);
+uploadForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const file = pdfInput.files[0];
+    if (!file) {
+        setStatus("Choose a PDF before indexing.", true);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    uploadButton.disabled = true;
+    setStatus("Uploading and indexing PDF...");
+
+    try {
+        const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Upload failed.");
+        }
+
+        setStatus(`${data.document.filename} indexed with ${data.document.chunks} chunks.`);
+        await loadDocuments();
+    } catch (error) {
+        setStatus(error.message, true);
+    } finally {
+        uploadButton.disabled = false;
+    }
 });
 
-/* ── Drag & Drop ────────────────────────────── */
-["dragenter", "dragover"].forEach((e) => {
-    dropZone.addEventListener(e, (ev) => {
-        ev.preventDefault();
-        dropZone.classList.add("dragging");
-    });
-});
-
-["dragleave", "drop"].forEach((e) => {
-    dropZone.addEventListener(e, (ev) => {
-        ev.preventDefault();
-        dropZone.classList.remove("dragging");
-    });
-});
-
-dropZone.addEventListener("drop", (ev) => {
-    const file = ev.dataTransfer.files[0];
-    if (file) uploadPdf(file);
-});
-
-/* ── Chat ────────────────────────────── */
-chatForm.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
+chatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
     const question = questionInput.value.trim();
-    if (!question || !hasDocuments) return;
+    if (!question) {
+        return;
+    }
 
     addMessage("user", `<p>${escapeHtml(question)}</p>`);
     questionInput.value = "";
     sendButton.disabled = true;
-    questionInput.disabled = true;
-    showLoader();
+    const loader = loadingTemplate.content.firstElementChild.cloneNode(true);
+    messages.appendChild(loader);
+    messages.scrollTop = messages.scrollHeight;
 
     try {
-        const res = await fetch("/api/chat", {
+        const response = await fetch("/api/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question, top_k: 5 }),
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({question, top_k: 5}),
         });
-        const data = await res.json();
+        const data = await response.json();
 
-        if (!res.ok) throw new Error(data.detail || "Chat failed.");
+        if (!response.ok) {
+            throw new Error(data.detail || "Chat failed.");
+        }
 
-        removeLoader();
-
+        loader.remove();
         if (data.debug && data.debug.steps) {
             renderSteps(data.debug.steps);
         }
-
-        const html = `
-            <p>${formatAnswer(data.answer)}</p>
-            ${renderCitations(data.citations)}
-        `;
-        addMessage("assistant", html);
-    } catch (err) {
-        removeLoader();
-        addMessage("assistant", `<p class="error-text">${escapeHtml(err.message)}</p>`);
+        addMessage("assistant", `<p>${escapeHtml(data.answer)}</p>${renderCitations(data.citations)}`);
+    } catch (error) {
+        loader.remove();
+        addMessage("assistant", `<p class="error">${escapeHtml(error.message)}</p>`);
     } finally {
         sendButton.disabled = false;
-        questionInput.disabled = false;
         questionInput.focus();
     }
 });
 
-/* ── Init ────────────────────────────── */
+["dragenter", "dragover"].forEach((eventName) => {
+    dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("dragging");
+    });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+    dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("dragging");
+    });
+});
+
+dropZone.addEventListener("drop", (event) => {
+    const file = event.dataTransfer.files[0];
+    if (file) {
+        pdfInput.files = event.dataTransfer.files;
+        setStatus(`${file.name} selected.`);
+    }
+});
+
+pdfInput.addEventListener("change", () => {
+    const file = pdfInput.files[0];
+    if (file) {
+        setStatus(`${file.name} selected.`);
+    }
+});
+
 refreshDocs.addEventListener("click", loadDocuments);
-loadDocuments();
-questionInput.focus();
+loadDocuments().catch(() => {
+    documentList.innerHTML = "<li>Document list unavailable.</li>";
+});
