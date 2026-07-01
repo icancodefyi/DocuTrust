@@ -3,74 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocuTrust</title>
+    <title>DocuTrust — Enterprise RAG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <main class="shell">
-        <section class="workspace">
-            <aside class="sidebar">
-                <div class="brand">
-                    <span class="brand-mark">D</span>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-mark">D</span>
                     <div>
                         <h1>DocuTrust</h1>
-                        <p>Enterprise Advanced RAG Platform</p>
+                        <p>Enterprise RAG Platform</p>
                     </div>
                 </div>
+            </div>
 
-                <form id="uploadForm" class="upload-panel">
-                    <label for="pdfInput" class="drop-zone" id="dropZone">
-                        <span class="drop-icon">PDF</span>
-                        <strong>Upload a PDF</strong>
-                        <small>Indexed with PyMuPDF, Sentence Transformers, and ChromaDB</small>
-                        <input id="pdfInput" name="file" type="file" accept="application/pdf">
-                    </label>
-                    <button type="submit" id="uploadButton">Index Document</button>
-                    <p id="uploadStatus" class="status-text">Waiting for a document.</p>
-                </form>
+            <!-- Upload Area -->
+            <div class="upload-section">
+                <label class="drop-zone" id="dropZone">
+                    <input id="pdfInput" type="file" accept="application/pdf" hidden>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+                    <span class="drop-text"><strong>Drop PDF here</strong><small>or click to browse</small></span>
+                </label>
+                <p id="uploadStatus" class="upload-status"></p>
+            </div>
 
-                <section>
-                    <div class="section-heading">
-                        <h2>Indexed Files</h2>
-                        <button id="refreshDocs" type="button">Refresh</button>
-                    </div>
-                    <ul id="documentList" class="document-list"></ul>
-                </section>
-            </aside>
-
-            <section class="chat-panel">
-                <header class="chat-header">
-                    <div>
-                        <h2>Ask your documents</h2>
-                        <p>Answers are grounded in retrieved chunks with page citations.</p>
-                    </div>
-                    <span class="live-pill">RAG Ready</span>
-                </header>
-
-                <details class="agent-log" id="agentLog">
-                    <summary>Agent Process <span id="logCount">0</span></summary>
-                    <div id="logEntries"></div>
-                </details>
-
-                <div id="messages" class="messages">
-                    <article class="message assistant">
-                        <p>Upload a PDF, then ask a question. I will retrieve relevant passages and cite source pages.</p>
-                    </article>
+            <!-- Document List -->
+            <div class="docs-section">
+                <div class="docs-header">
+                    <h2>Uploaded Documents</h2>
+                    <button id="refreshDocs" class="icon-btn" title="Refresh">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+                    </button>
                 </div>
+                <ul id="documentList" class="doc-list"></ul>
+            </div>
 
-                <form id="chatForm" class="composer">
-                    <input id="questionInput" type="text" placeholder="Ask about an uploaded PDF..." autocomplete="off">
-                    <button type="submit" id="sendButton">Send</button>
-                </form>
-            </section>
-        </section>
-    </main>
+            <!-- Footer -->
+            <div class="sidebar-footer">
+                <span class="status-dot active"></span>
+                <span>RAG Ready · CRAG Active</span>
+            </div>
+        </aside>
 
-    <template id="loadingTemplate">
-        <article class="message assistant loading">
-            <span></span><span></span><span></span>
-        </article>
-    </template>
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <h2>Ask your documents</h2>
+                <span class="badge">Powered by Groq + LangGraph</span>
+            </header>
+
+            <!-- Agent Log -->
+            <div id="agentLog" class="agent-log" style="display:none;">
+                <div class="agent-log-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <span>Agent Process</span>
+                    <span id="logCount" class="log-count">0</span>
+                </div>
+                <div id="logEntries" class="log-entries"></div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages" class="messages">
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                    <h3>Upload a PDF to get started</h3>
+                    <p>Drop a document in the sidebar, then ask any question. DocuTrust will retrieve, validate, and cite sources.</p>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="chatForm" class="composer">
+                <input id="questionInput" type="text" placeholder="Ask about your uploaded documents..." autocomplete="off" disabled>
+                <button type="submit" id="sendButton" class="send-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
+            </form>
+        </main>
+    </div>
 
     <script src="/static/js/app.js"></script>
 </body>
