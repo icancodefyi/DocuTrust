@@ -13,21 +13,19 @@ Prerequisites: Python 3.11+, `GROQ_API_KEY` and `TAVILY_API_KEY` in `.env`.
 
 ## How It Works
 
-```
-Question → Retrieve (ChromaDB) → Grade (cross-encoder) → Generate (Groq)
-                                   │
-                              < 2 chunks relevant?
-                                   │
-                      Rewrite query → Retrieve again → Web Search (Tavily)
-                                                            │
-                              └──────── All context ──────────┘
-                                                            │
-                                                      Generate (Groq)
-                                                            │
-                                                   Answer + Citations
+```mermaid
+flowchart TD
+    Q[User Question] --> R[Retrieve<br/>ChromaDB search]
+    R --> G[Grade<br/>Cross-encoder rerank]
+    G -->|≥ 2 relevant| Gen[Generate<br/>Groq answer]
+    G -->|< 2 relevant| RW[Rewrite query<br/>Groq]
+    RW --> R2[Retrieve again<br/>ChromaDB]
+    R2 --> WS[Web Search<br/>Tavily fallback]
+    WS --> Gen
+    Gen --> A[Answer + Citations]
 ```
 
-The CRAG (Corrective RAG) pipeline automatically detects low-relevance retrievals, rewrites the query, and falls back to web search when needed.
+When too few chunks pass the relevance threshold (score < 0.5), the pipeline automatically rewrites the query, retries retrieval, and falls back to web search — that's the "self-correcting" part.
 
 ## Architecture
 
@@ -42,6 +40,36 @@ The CRAG (Corrective RAG) pipeline automatically detects low-relevance retrieval
 | Web fallback | Tavily API | Web search when document context is insufficient |
 | Pipeline | LangGraph | State machine orchestrating retriever → grader → rewriter → web_search → generator |
 | Frontend | Vanilla HTML/CSS/JS | White ChatGPT-style UI with progress card + source chips |
+
+```mermaid
+graph TB
+    subgraph Frontend
+        HTML[Vanilla HTML/CSS/JS]
+    end
+
+    subgraph Backend
+        API[FastAPI + Uvicorn]
+        LG[LangGraph<br/>CRAG Pipeline]
+        LLM[Groq API<br/>llama-3.3-70b-versatile]
+        CE[Cross-encoder<br/>bge-reranker-v2-m3]
+        TAV[Tavily API<br/>Web search fallback]
+    end
+
+    subgraph Storage
+        CDB[(ChromaDB<br/>Vectors)]
+        SQL[(SQLite<br/>Metadata + Traces)]
+        PDF[Uploads/<br/>PDF files]
+    end
+
+    HTML --> API
+    API --> LG
+    LG --> LLM
+    LG --> CE
+    LG --> TAV
+    LG --> CDB
+    LG --> SQL
+    API --> PDF
+```
 
 All storage is local files — delete the project folder to wipe everything.
 

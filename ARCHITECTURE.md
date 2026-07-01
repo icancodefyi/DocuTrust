@@ -9,60 +9,55 @@ DocuTrust is a **self-correcting Retrieval-Augmented Generation (RAG)** platform
 **Storage:** Local only — ChromaDB vectors + SQLite metadata on disk  
 **Run:** Single command — `bash start.sh`
 
+```mermaid
+graph TB
+    subgraph Frontend["Frontend (Vanilla HTML/CSS/JS)"]
+        UI[SPA — index.html<br/>ChatGPT-style UI]
+    end
+
+    subgraph Backend["Backend (FastAPI + Uvicorn)"]
+        API[REST API]
+        LG[LangGraph CRAG Pipeline]
+        LLM[Groq — llama-3.3-70b-versatile<br/>Answer generation + query rewriting]
+        CE[BAAI/bge-reranker-v2-m3<br/>Cross-encoder relevance grader]
+        TAV[Tavily API — Web search fallback]
+    end
+
+    subgraph Storage["Storage (all local files)"]
+        CDB[(ChromaDB<br/>chroma_db/<br/>Vectors + text + metadata)]
+        SQL[(SQLite<br/>data/metadata.db<br/>Document info)]
+        TR[(SQLite<br/>data/traces.db<br/>Interaction logs)]
+        PDF[uploads/<br/>PDF files]
+    end
+
+    UI -->|POST /api/chat| API
+    API -->|rag_service.chat\(\)| LG
+    LG -->|Embeddings| CDB
+    LG -->|Groq API| LLM
+    LG -->|Relevance scores| CE
+    LG -->|Web fallback| TAV
+    API -->|Document listing| SQL
+    API -->|Trace logging| TR
+```
+
 ---
 
 ## Pipeline Flow
 
-```
-User Question
-     │
-     ▼
-┌─────────────────────────────────────────────────────┐
-│ 1. RETRIEVE                                          │
-│    embed(question) → ChromaDB search → top-5 chunks  │
-└──────────────────┬──────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────┐
-│ 2. GRADE                                             │
-│    Cross-encoder (BAAI/bge-reranker-v2-m3)           │
-│    Score each chunk 0–1, keep ≥ 0.5                  │
-└─────┬───────────────────────────┬───────────────────┘
-      │                           │
-   ≥ 2 passed                 < 2 passed
-      │                           │
-      ▼                           ▼
-┌─────────────┐          ┌──────────────────────┐
-│ GENERATE    │          │ 3. REWRITE (Groq)     │
-│ Groq answers │          │    Rewrite query for  │
-│ with context │          │    better retrieval   │
-└─────────────┘          └──────────┬───────────┘
-      │                             │
-      │                             ▼
-      │                    ┌──────────────────────┐
-      │                    │ 4. RETRIEVE (again)   │
-      │                    │    With rewritten query│
-      │                    └──────────┬───────────┘
-      │                             │
-      │                             ▼
-      │                    ┌──────────────────────┐
-      │                    │ 5. WEB SEARCH (Tavily)│
-      │                    │    Fallback if still  │
-      │                    │    too few relevant   │
-      │                    └──────────┬───────────┘
-      │                             │
-      └──────────────┬──────────────┘
-                     ▼
-          ┌──────────────────────┐
-          │ GENERATE (Groq)      │
-          │ Context = passed     │
-          │ chunks + web results │
-          └──────────┬───────────┘
-                     ▼
-          ┌──────────────────────┐
-          │ Answer + Citations   │
-          │ with source chips    │
-          └──────────────────────┘
+```mermaid
+flowchart TD
+    Q[User Question] --> RET[1. RETRIEVE<br/>embed → ChromaDB search<br/>top-5 chunks]
+    RET --> GR[2. GRADE<br/>Cross-encoder bge-reranker-v2-m3<br/>Score ≥ 0.5]
+
+    GR -->|≥ 2 chunks passed| GEN1[GENERATE<br/>Groq answer<br/>with context]
+
+    GR -->|< 2 chunks passed| RW[3. REWRITE<br/>Groq rewrites query<br/>for better retrieval]
+    RW --> RET2[4. RETRIEVE again<br/>With rewritten query]
+    RET2 --> WS[5. WEB SEARCH<br/>Tavily fallback<br/>web results]
+
+    WS --> GEN2[GENERATE<br/>Groq answer<br/>passed chunks + web results]
+    GEN1 --> RES[Answer + Citations<br/>with source chips]
+    GEN2 --> RES
 ```
 
 This flow is implemented as a **LangGraph state machine** in `backend/agents/graph.py`. Every node is a pure function that reads from and writes to a shared `CRAGState` dict.
