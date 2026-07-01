@@ -221,6 +221,60 @@ p {
     white-space: nowrap;
 }
 
+.agent-log {
+    margin: 0 24px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(10, 13, 18, 0.45);
+    font-size: 0.85rem;
+}
+
+.agent-log summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.agent-log summary #logCount {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(61, 214, 165, 0.15);
+    font-size: 0.75rem;
+}
+
+#logEntries {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.log-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(22, 30, 45, 0.6);
+}
+
+.log-icon {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.log-agent {
+    font-weight: 600;
+    color: var(--text);
+    min-width: 90px;
+}
+
+.log-detail {
+    color: var(--muted);
+}
+
 .messages {
     display: flex;
     flex-direction: column;

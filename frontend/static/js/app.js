@@ -10,6 +10,8 @@ const messages = document.querySelector("#messages");
 const loadingTemplate = document.querySelector("#loadingTemplate");
 const documentList = document.querySelector("#documentList");
 const refreshDocs = document.querySelector("#refreshDocs");
+const logEntries = document.querySelector("#logEntries");
+const logCount = document.querySelector("#logCount");
 
 function setStatus(text, isError = false) {
     uploadStatus.textContent = text;
@@ -48,6 +50,25 @@ function renderCitations(citations) {
     `).join("");
 
     return `<div class="citations">${items}</div>`;
+}
+
+function renderSteps(steps) {
+    if (!steps || !steps.length) {
+        return;
+    }
+
+    logEntries.innerHTML = "";
+    steps.forEach((step) => {
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.innerHTML = `
+            <span class="log-icon">\u2713</span>
+            <span class="log-agent">${escapeHtml(step.agent)}</span>
+            <span class="log-detail">${escapeHtml(step.detail)}</span>
+        `;
+        logEntries.appendChild(entry);
+    });
+    logCount.textContent = steps.length;
 }
 
 async function loadDocuments() {
@@ -132,6 +153,9 @@ chatForm.addEventListener("submit", async (event) => {
         }
 
         loader.remove();
+        if (data.debug && data.debug.steps) {
+            renderSteps(data.debug.steps);
+        }
         addMessage("assistant", `<p>${escapeHtml(data.answer)}</p>${renderCitations(data.citations)}`);
     } catch (error) {
         loader.remove();

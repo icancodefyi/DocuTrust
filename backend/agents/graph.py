@@ -170,3 +170,40 @@ class CRAGPipeline:
             "citations": result.get("citations", []),
             "steps": result.get("steps", []),
         }
+
+    def run_stream(self, question: str):
+        initial: CRAGState = {
+            "question": question,
+            "rewritten_question": "",
+            "chunks": [],
+            "passed_chunks": [],
+            "failed_chunks": [],
+            "web_chunks": [],
+            "answer": "",
+            "citations": [],
+            "retry_count": 0,
+            "steps": [],
+        }
+
+        final_state = None
+        for event in self.graph.stream(initial):
+            for node_name, node_output in event.items():
+                node_steps = node_output.get("steps", [])
+                for step in node_steps:
+                    yield {"type": "step", **step}
+
+            if "generate" in event and "answer" in event["generate"]:
+                final_state = event["generate"]
+
+        if final_state:
+            yield {
+                "type": "done",
+                "answer": final_state.get("answer", "No answer generated."),
+                "citations": final_state.get("citations", []),
+            }
+        else:
+            yield {
+                "type": "done",
+                "answer": "No answer generated.",
+                "citations": [],
+            }
