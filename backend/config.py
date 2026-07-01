@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
 
     tavily_api_key: str | None = Field(default=None, alias="TAVILY_API_KEY")
+    hf_token: str | None = Field(default=None, alias="HF_TOKEN")
 
     cross_encoder_model: str = "BAAI/bge-reranker-v2-m3"
     relevance_threshold: float = 0.5

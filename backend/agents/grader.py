@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from sentence_transformers import CrossEncoder
@@ -7,6 +8,9 @@ from backend.config import get_settings
 
 @lru_cache(maxsize=1)
 def _get_cross_encoder(model_name: str) -> CrossEncoder:
+    token = get_settings().hf_token
+    if token:
+        os.environ["HF_TOKEN"] = token
     return CrossEncoder(model_name)
 
 
