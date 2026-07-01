@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocuTrust</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>DocuTrust</h1>
+
+      <section class="upload">
+        <h2>Upload PDF</h2>
+        <input id="fileInput" type="file" accept="application/pdf" />
+        <button id="uploadBtn">Upload</button>
+        <div id="uploadStatus"></div>
+      </section>
+
+      <section class="chat">
+        <h2>Ask a question</h2>
+        <textarea id="question" rows="3" placeholder="Ask about the uploaded documents..."></textarea>
+        <button id="askBtn">Ask</button>
+        <div id="answer"></div>
+        <div id="citations"></div>
+      </section>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

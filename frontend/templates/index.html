@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuTrust</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="workspace">
+            <aside class="sidebar">
+                <div class="brand">
+                    <span class="brand-mark">D</span>
+                    <div>
+                        <h1>DocuTrust</h1>
+                        <p>Enterprise Advanced RAG Platform</p>
+                    </div>
+                </div>
+
+                <form id="uploadForm" class="upload-panel">
+                    <label for="pdfInput" class="drop-zone" id="dropZone">
+                        <span class="drop-icon">PDF</span>
+                        <strong>Upload a PDF</strong>
+                        <small>Indexed with PyMuPDF, Sentence Transformers, and ChromaDB</small>
+                        <input id="pdfInput" name="file" type="file" accept="application/pdf">
+                    </label>
+                    <button type="submit" id="uploadButton">Index Document</button>
+                    <p id="uploadStatus" class="status-text">Waiting for a document.</p>
+                </form>
+
+                <section>
+                    <div class="section-heading">
+                        <h2>Indexed Files</h2>
+                        <button id="refreshDocs" type="button">Refresh</button>
+                    </div>
+                    <ul id="documentList" class="document-list"></ul>
+                </section>
+            </aside>
+
+            <section class="chat-panel">
+                <header class="chat-header">
+                    <div>
+                        <h2>Ask your documents</h2>
+                        <p>Answers are grounded in retrieved chunks with page citations.</p>
+                    </div>
+                    <span class="live-pill">RAG Ready</span>
+                </header>
+
+                <div id="messages" class="messages">
+                    <article class="message assistant">
+                        <p>Upload a PDF, then ask a question. I will retrieve relevant passages and cite source pages.</p>
+                    </article>
+                </div>
+
+                <form id="chatForm" class="composer">
+                    <input id="questionInput" type="text" placeholder="Ask about an uploaded PDF..." autocomplete="off">
+                    <button type="submit" id="sendButton">Send</button>
+                </form>
+            </section>
+        </section>
+    </main>
+
+    <template id="loadingTemplate">
+        <article class="message assistant loading">
+            <span></span><span></span><span></span>
+        </article>
+    </template>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

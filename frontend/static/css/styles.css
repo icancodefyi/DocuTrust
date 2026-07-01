@@ -1,0 +1,358 @@
+:root {
+    color-scheme: dark;
+    --bg: #0a0d12;
+    --panel: #111722;
+    --panel-soft: #161e2d;
+    --line: #273244;
+    --text: #edf3ff;
+    --muted: #94a3b8;
+    --accent: #3dd6a5;
+    --accent-strong: #20b486;
+    --danger: #f87171;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(61, 214, 165, 0.14), transparent 36rem),
+        linear-gradient(135deg, #090b10 0%, #101723 48%, #0b111a 100%);
+    color: var(--text);
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    border: 0;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    background: var(--accent);
+    color: #04110d;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+button:hover {
+    background: var(--accent-strong);
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+    transform: none;
+}
+
+.shell {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 32px 0;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    min-height: calc(100vh - 64px);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(17, 23, 34, 0.82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    border-right: 1px solid var(--line);
+    background: rgba(10, 13, 18, 0.44);
+}
+
+.brand {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #03100c;
+    font-weight: 900;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+.brand h1 {
+    font-size: 1.3rem;
+}
+
+.brand p,
+.chat-header p,
+.drop-zone small,
+.status-text,
+.document-list {
+    color: var(--muted);
+}
+
+.upload-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.drop-zone {
+    display: grid;
+    gap: 10px;
+    padding: 22px;
+    min-height: 190px;
+    place-items: center;
+    text-align: center;
+    border: 1px dashed #3a4960;
+    border-radius: 8px;
+    background: var(--panel-soft);
+    cursor: pointer;
+}
+
+.drop-zone.dragging {
+    border-color: var(--accent);
+    background: rgba(61, 214, 165, 0.1);
+}
+
+.drop-zone input {
+    display: none;
+}
+
+.drop-icon {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
+    background: #223146;
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.section-heading h2 {
+    font-size: 0.95rem;
+}
+
+.section-heading button {
+    padding: 0.45rem 0.7rem;
+    background: #223146;
+    color: var(--text);
+}
+
+.document-list {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.document-list li {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(22, 30, 45, 0.72);
+}
+
+.document-list strong {
+    display: block;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.chat-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-width: 0;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    border-bottom: 1px solid var(--line);
+}
+
+.chat-header h2 {
+    font-size: 1.2rem;
+}
+
+.live-pill {
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(61, 214, 165, 0.12);
+    color: var(--accent);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.message {
+    width: min(78%, 760px);
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    line-height: 1.55;
+    background: var(--panel-soft);
+}
+
+.message.user {
+    align-self: flex-end;
+    background: rgba(61, 214, 165, 0.12);
+    border-color: rgba(61, 214, 165, 0.28);
+}
+
+.citations {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.citation {
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(10, 13, 18, 0.45);
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.citation strong {
+    color: var(--text);
+}
+
+.composer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 24px;
+    border-top: 1px solid var(--line);
+    background: rgba(10, 13, 18, 0.34);
+}
+
+.composer input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0 14px;
+    background: #0d131d;
+    color: var(--text);
+    outline: none;
+}
+
+.composer input:focus {
+    border-color: var(--accent);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 88px;
+}
+
+.loading span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 900ms infinite ease-in-out;
+}
+
+.loading span:nth-child(2) {
+    animation-delay: 140ms;
+}
+
+.loading span:nth-child(3) {
+    animation-delay: 280ms;
+}
+
+.error {
+    color: var(--danger);
+}
+
+@keyframes pulse {
+    0%, 80%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (max-width: 860px) {
+    .shell {
+        width: 100%;
+        padding: 0;
+    }
+
+    .workspace {
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .chat-header,
+    .composer {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .message {
+        width: 100%;
+    }
+}

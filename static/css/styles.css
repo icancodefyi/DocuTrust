@@ -1,0 +1,11 @@
+:root{--bg:#0f1724;--card:#0b1220;--accent:#7c3aed;--muted:#94a3b8;--text:#e6eef8}
+*{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
+body{margin:0;background:linear-gradient(180deg,#071029,var(--bg));color:var(--text);min-height:100vh}
+.container{max-width:900px;margin:40px auto;padding:24px}
+h1{margin:0 0 16px}
+.upload,.chat{background:var(--card);padding:16px;border-radius:10px;margin-bottom:16px}
+input[type=file]{display:block;margin-bottom:8px}
+textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #193048;background:#071827;color:var(--text)}
+button{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+#answer{margin-top:12px;padding:12px;background:#071827;border-radius:8px}
+#citations{margin-top:8px;color:var(--muted);font-size:0.9rem}
