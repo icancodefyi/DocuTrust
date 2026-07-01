@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     mongo_uri: str | None = Field(default=None, alias="MONGO_URI")
     mongo_database: str = Field(default="docutrust", alias="MONGO_DATABASE")
 
+    groq_api_key: str | None = Field(default=None, alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama3-70b-8192", alias="GROQ_MODEL")
+
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     chroma_collection: str = "docutrust_documents"
     chunk_size: int = 900

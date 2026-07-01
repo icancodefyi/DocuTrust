@@ -86,7 +86,7 @@ class RAGService:
         return ChatResponse(
             answer=answer,
             citations=citations,
-            debug={"retrieved_chunks": len(matches), "llm": "ollama-or-placeholder"},
+            debug={"retrieved_chunks": len(matches), "llm": "groq-or-placeholder"},
         )
 
     def documents(self) -> list[dict]:

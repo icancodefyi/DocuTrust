@@ -7,3 +7,4 @@ PyMuPDF==1.25.1
 sentence-transformers==5.6.0
 chromadb==1.5.9
 pymongo==4.10.1
+openai==1.55.0
