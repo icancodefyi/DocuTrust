@@ -182,12 +182,18 @@ function markProgressDone(agent) {
     }
 }
 
-function removeProgressCard() {
-    if (progressCard) {
-        progressCard.remove();
-        progressCard = null;
-        progressBody = null;
+function finalizeProgressCard() {
+    if (!progressCard) return;
+    const head = progressCard.querySelector(".agent-progress-head");
+    const dot = head.querySelector(".pulse-dot");
+    if (dot) {
+        dot.className = "pulse-dot done-static";
     }
+    const label = head.querySelector("span:last-child");
+    if (label) label.textContent = "CRAG Pipeline Complete";
+    progressCard.classList.add("done");
+    progressCard = null;
+    progressBody = null;
 }
 
 /* ── Sidebar ────────────────────────────── */
@@ -325,11 +331,11 @@ chatForm.addEventListener("submit", async (e) => {
 
         hideLoader();
         seen.forEach((a) => markProgressDone(a));
-        setTimeout(removeProgressCard, 600);
+        finalizeProgressCard();
         addAssistantMsg(answer, citations);
     } catch (err) {
         hideLoader();
-        removeProgressCard();
+        finalizeProgressCard();
         addErrorMsg(err.message);
     } finally {
         sendButton.disabled = false;
