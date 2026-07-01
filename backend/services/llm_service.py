@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from openai import OpenAI
+from groq import Groq
 
 from backend.config import get_settings
 
@@ -8,8 +8,7 @@ from backend.config import get_settings
 class LLMService:
     def __init__(self) -> None:
         settings = get_settings()
-        self.client = OpenAI(
-            base_url="https://api.groq.com/openai/v1",
+        self.client = Groq(
             api_key=settings.groq_api_key,
         ) if settings.groq_api_key else None
         self.model = settings.groq_model
